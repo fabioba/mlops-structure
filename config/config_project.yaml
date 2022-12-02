@@ -1,0 +1,142 @@
+PROJECT_NAME: 'ML-PIPELINE'
+
+STAGING_LEVEL:
+  DEV:
+    DB_CONNECTION:
+      USER: 'fabio-barbazza'
+    S3:
+      BUCKET_NAME: "ml_pipeline_dev"
+  
+  UAT:
+    DB_CONNECTION:
+      USER: 'fabio-barbazza'
+    S3:
+      BUCKET_NAME: "ml_pipeline_uat"
+  
+  PROD:
+    DB_CONNECTION:
+      USER: 'fabio-barbazza'
+    S3:
+      BUCKET_NAME: "ml_pipeline_prod"
+
+STEPS:
+  DATA_PROCESSING:
+    S3:
+      INPUT_PATH: 'data'
+      OUTPUT_PATH: 'data_processing/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/data_processing/src/sql_queries'
+    LIST_VARS_PROCESSING:
+      START_DATE: ""
+      END_DATE: ""
+
+  TRAIN_TEST_SPLIT:
+    S3:
+      INPUT_PATH_DATA_PROCESSING: 'data_processing/artifacts'
+      OUTPUT_PATH_TRAIN_TEST_SPLIT: 'train_test_split/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/train_test_split/src/sql_queries'
+    TEST_PERC: 0.3
+
+  MODEL_TRAINING:
+    S3:
+      INPUT_PATH_TRAIN_TEST_SPLIT: 'train_test_split/artifacts'
+      OUTPUT_PATH_MODEL_TRAINING: 'model_training/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/model_training/src/sql_queries'
+    MODELS:
+      OLS:
+        ESTIMATOR_NAME: 'OLS'
+        TUNE_HYPERPARAMS: False
+        PARAM_GRID: None
+          
+  MODEL_EVALUATION:
+    S3:
+      INPUT_PATH_MODEL_TRAINING: 'model_training/artifacts'
+      OUTPUT_PATH_MODEL_EVALUATION: 'model_evaluation/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/model_evaluation/src/sql_queries'
+    LIST_METRICS: ['accuracy']
+
+  DATA_DRIFT_DETECTION:
+    S3:
+      INPUT_PATH_DATA_PROCESSING: 'data_processing/artifacts'
+      INPUT_PATH_MODEL_DEPLOYMENT: 'model_deployment/artifacts'
+      OUTPUT_PATH_DATA_DRIFT_DETECTION: 'data_drift_detection/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/data_drift_detection/src/sql_queries'
+    LIST_METHODS_COMPARISON:
+      STATISTICAL_TEST: 
+        NAME_STATISTICAL_TEST: ""
+        THRESHOLD: 0
+  
+  MODEL_PREDICTION:
+    S3:
+      INPUT_PATH_DATA_DRIFT_DETECTION: 'data_processing/artifacts'
+      OUTPUT_PATH_MODEL_PREDICTION: 'model_prediction/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/model_prediction/src/sql_queries'
+
+
+  MODEL_DRIFT_DETECTION:
+    S3:
+      INPUT_PATH_MODEL_DEPLOYMENT: 'model_deployment/artifacts'
+      INPUT_PATH_DATA_PROCESSING_PREDICTION: 'data_processing/artifacts'
+      OUTPUT_PATH_MODEL_DRIFT_DETECTION: 'model_drift_detection/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/model_drift_detection/src/sql_queries'
+      
+  MODEL_DEPLOYMENT:
+    S3:
+      INPUT_PATH_MODEL_EVALUATION: 'model_evaluation/artifacts'
+      INPUT_PATH_MODEL_TRAINING: 'model_training/artifacts'
+      INPUT_PATH_DATA_PROCESSING: 'model_training/artifacts'
+      OUTPUT_PATH_MODEL_DEPLOYMENT: 'model_deployment/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/model_deployment/src/sql_queries'
+
+  SERVE_PREDICTION:
+    S3:
+      INPUT_PATH_MODEL_PREDICTION: 'model_prediction/artifacts'
+      OUTPUT_PATH_SERVE_PREDICTION: 'serve_prediction/artifacts'
+    SQL_QUERIES:
+      PATH: 'src/serve_prediction/src/sql_queries'
+
+TRAINING_PIPELINE:
+  PARENT_FOLDER: 'training_pipeline'
+  STEPS: 
+    DATA_PROCESSING: 
+      ORDER_INDEX: 1
+      START_DATE: ""
+      END_DATE: ""
+    TRAIN_TEST_SPLIT: 
+      ORDER_INDEX: 2
+      TEST_PERC: 0.2
+    
+
+PREDICTION_PIPELINE:
+  PARENT_FOLDER: 'prediction_pipeline' 
+  STEPS: 
+    DATA_PROCESSING: 
+      ORDER_INDEX: 1
+      START_DATE: ""
+      END_DATE: ""
+    DATA_DRIFT_DETECTION:
+      ORDER_INDEX: 2
+      THRESHOLD_DATA_DRIFT: 0
+
+PREDICTION_PIPELINE_NO_DATA_DRIFT:
+  PARENT_FOLDER: 'prediction_pipeline' 
+  STEPS: 
+    MODEL_PREDICTION: 
+      ORDER_INDEX: 1
+    MODEL_DRIFT_DETECTION: 
+      ORDER_INDEX: 2
+    SERVE_PREDICTION: 
+      ORDER_INDEX: 3
+
+PREDICTION_PIPELINE_NO_MODEL_DRIFT:
+  PARENT_FOLDER: 'prediction_pipeline' 
+  STEPS:
+    SERVE_PREDICTION: 
+      ORDER_INDEX: 1
