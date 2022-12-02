@@ -1,13 +1,46 @@
-# DDS-ML-PIPELINE
+# ML-PIPELINE
 
 ![Alt text](docs/imgs/ml_pipeline.drawio.png "Title")
 
-### Business Requirements
+## Table of content
+- [Business Context](#business_context)
+- [Data Sources](#data_sources)
+- [Getting Started](#getting_started)
+- [System Design](#system_design)
+    * [System Design - Environment](#system_design_env)
+    * [System Design - MLOps Steps](#system_design_mlops_steps)
+    * [System Design - ML Project Structure](#system_design_ml_proj_structure)
+    * [System Design - CI](#system_design_ci)
+- [Note](#note)
+- [References](#references)
+
+
+<a name="business_context"/>
+
+## Business Context
 The goal of this project is to perform training and prediction of the carbons emission in Italy.
 
-### Getting Started
+<a name="data_sources"/>
 
-#### Environment
+## Data Sources
+The input data used by this project are synthetic.
+
+<a name="getting_started"/>
+
+## Getting Started
+
+To start one of the pipelines, run the following command from terminal:
+```
+python pipeline_orchestrator.py --staging_level_run_type=DEV --pipeline_type_name=TRAINING_PIPELINE
+```
+
+<a name="system_design"/>
+
+## System Design
+
+<a name="system_design_env"/>
+
+### System Design - Environment
 Create **conda** environment, from terminal run:
 ```
 conda create -n ml-pipeline python=3.8
@@ -18,13 +51,9 @@ then, activate the env:
 conda activate ml-pipeline
 ```
 
+<a name="system_design_mlops_steps"/>
 
-#### Run pipeline
-```
-python pipeline_orchestrator.py --staging_level_run_type=DEV --pipeline_type_name=TRAINING_PIPELINE
-```
-
-#### MLOps steps
+### MLOps Steps
 On each step, defines:
 * `unit tests`, that are responsible for testing single function
 * `integration tests`, determines if the steps return the expected outcome and combine them to test if the workflow run as expected.
@@ -61,17 +90,24 @@ Defines the following pipelines:
             * `active model dataset`
 
 * `prediction_pipeline`:
-      * `data processing`, performs the feature_engineering step from the training_pipeline (change input and output path for reading/writing data)
-      * `data drift detection`, detects if there's some data drift between current prediction data and those data used for training the model. If there's some data drift, then re-train the model and follow all the steps from the training_pipeline to create a new version of the models.
-      * `model_prediction`, runs this step if there's no data-drift and store the predicted data.
-      * `model drift detection`, this steps checks if there's model drift in between predicted values and actual values (from training dataset). It compares the distribution of prediction dataset and training dataset and measure if theres' some significant difference
+    * `data processing`, performs the feature_engineering step from the training_pipeline (change input and output path for reading/writing data)
+    * `data drift detection`, detects if there's some data drift between current prediction data and those data used for training the model. If there's some data drift, then re-train the model and follow all the steps from the training_pipeline to create a new version of the models.
+    * `model_prediction`, runs this step if there's no data-drift and store the predicted data.
+    * `model drift detection`, this steps checks if there's model drift in between predicted values and actual values (from training dataset). It compares the distribution of prediction dataset and training dataset and measure if theres' some significant difference
 
+One of the key concepts of this project is reusable component. As it's easy to see, some of the steps used by the `TrainingPipeline` are also part of the `PredictionPipeline`.
 
-### ML Structure
+<a name="system_design_ml_proj_structure"/>
+
+### ML Project Structure
 ```
 │
 ├── pipeline_orchestrator.py
+├── .github/
+├── config/
+├── docs/
 ├── notebooks/
+├── data/
 ├── tests/
 |     ├── unit_tests/
 |     └── integration_tests/
@@ -107,26 +143,37 @@ Defines the following pipelines:
             └── model_prediction.py    
    
 ```  
-### Continuous Integration (CI)
-Continuous integration (CI) is the practice of automating the integration of code changes from multiple contributors into a single software project.
-* recreate the same environment in production
-* run tests
 
-Include **rule** on Github:
-* avoid pushing directly to `main` branch
-* forcing pull request before merging with `main` branch 
-* before merging, wait until all checks have passed
 
-From terminal, run the following command:
-```
-python -m pytest -r tests/unit_tests/
-```
+<a name="note"/>
 
+## Note
 
 ### OOP vs Procedural Programming
 All those steps included in this repo are considered as data structures, so they expose their argument.
 The training_pipeline decide which methods of which step should be run, so it orchestrates all those methods needed to accomplish the goal.
 The pipeline_orchestrator module handle with the right pipeline to run.
+
+### Continuous Integration (CI)
+Continuous integration (CI) is the practice of automating the integration of code changes from multiple contributors into a single software project.
+* recreate the same environment in production
+* run tests
+
+#### Unit Testing Locally
+From terminal, run the following command:
+```
+python -m pytest -r tests/unit_tests/
+```
+
+### GitHub Best Practices
+Include **rule** on Github:
+* avoid pushing directly to `main` branch
+* forcing pull request before merging with `main` branch 
+* before merging, wait until all checks have passed
+
+
+
+<a name="references"/>
 
 ### References
 * [Model Drift Detection](https://towardsdatascience.com/mlops-model-monitoring-prior-probability-shift-f64abfa03d9a)
@@ -141,4 +188,4 @@ The pipeline_orchestrator module handle with the right pipeline to run.
 
 
 ### Author
-@fabiobarbazza
+@fabioba
